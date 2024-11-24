@@ -34,11 +34,12 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         MarketplaceItem item = itemList.get(position);
+
         holder.itemName.setText(item.getName());
         holder.itemDescription.setText(item.getDescription());
-        holder.itemPrice.setText("$" + item.getPrice());
+        holder.itemPrice.setText(String.format("$%.2f", item.getPrice()));
 
-        // Load image using Glide
+        // Load image with Glide
         Glide.with(context).load(item.getImageUrl()).into(holder.itemImage);
     }
 
@@ -48,8 +49,8 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        public TextView itemName, itemDescription, itemPrice;
-        public ImageView itemImage;
+        TextView itemName, itemDescription, itemPrice;
+        ImageView itemImage;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
