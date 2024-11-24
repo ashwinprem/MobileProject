@@ -1,7 +1,7 @@
 package com.example.mobileproject;
 
 import android.os.Bundle;
-import android.view.View;
+import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -36,12 +36,12 @@ public class AddItemActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
 
         // Set up submit button click listener
-        submitButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                addItemToFirestore();
-            }
-        });
+        submitButton.setOnClickListener(v -> addItemToFirestore());
+
+        // Enable back button in Action Bar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
     }
 
     private void addItemToFirestore() {
@@ -73,5 +73,15 @@ public class AddItemActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     Toast.makeText(AddItemActivity.this, "Failed to add item: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            // Handle back button click
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

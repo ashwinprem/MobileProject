@@ -1,6 +1,7 @@
 package com.example.mobileproject;
 
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -37,5 +38,20 @@ public class ItemDetailsActivity extends AppCompatActivity {
 
         // Load image using Glide
         Glide.with(this).load(imageUrl).into(itemImage);
+
+        // Enable back button in Action Bar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            // Handle back button click
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
