@@ -11,11 +11,21 @@
         android:padding="16dp">
 
         <TextView
-            android:id="@+id/welcomeText"
-            android:layout_width="wrap_content"
+            android:id="@+id/emptyView"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="24sp"
-            android:text="Welcome!"/>
+            android:text="No items to display"
+            android:visibility="gone"
+            android:gravity="center"
+            android:textSize="16sp"
+            android:layout_marginBottom="10dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:scrollbars="vertical" />
 
         <Button
             android:id="@+id/logoutButton"
