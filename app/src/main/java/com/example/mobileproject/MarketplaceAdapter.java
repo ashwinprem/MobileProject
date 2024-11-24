@@ -1,6 +1,7 @@
 package com.example.mobileproject;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,11 +38,22 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
 
         holder.itemName.setText(item.getName());
         holder.itemDescription.setText(item.getDescription());
-        holder.itemPrice.setText(String.format("$%.2f", item.getPrice()));
+        holder.itemPrice.setText("$" + item.getPrice());
 
-        // Load image with Glide
+        // Load image using Glide
         Glide.with(context).load(item.getImageUrl()).into(holder.itemImage);
+
+        // Set click listener
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(context, ItemDetailsActivity.class);
+            intent.putExtra("name", item.getName());
+            intent.putExtra("description", item.getDescription());
+            intent.putExtra("price", String.valueOf(item.getPrice()));
+            intent.putExtra("imageUrl", item.getImageUrl());
+            context.startActivity(intent);
+        });
     }
+
 
     @Override
     public int getItemCount() {
