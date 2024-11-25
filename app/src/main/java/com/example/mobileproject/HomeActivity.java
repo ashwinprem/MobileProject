@@ -1,14 +1,18 @@
 package com.example.mobileproject;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -21,7 +25,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private TextView emptyView;
-    private androidx.appcompat.widget.SearchView searchView;
+    private Button logoutButton, addItemButton;
     private MarketplaceAdapter adapter;
     private List<MarketplaceItem> itemList;
     private FirebaseFirestore db;
@@ -34,55 +38,49 @@ public class HomeActivity extends AppCompatActivity {
         // Initialize views
         recyclerView = findViewById(R.id.recyclerView);
         emptyView = findViewById(R.id.emptyView);
-        searchView = findViewById(R.id.searchView);
+        logoutButton = findViewById(R.id.logoutButton);
+        addItemButton = findViewById(R.id.addItemButton);
 
         // Initialize Firestore and item list
-        db = FirebaseFirestore.getInstance();
         itemList = new ArrayList<>();
         adapter = new MarketplaceAdapter(this, itemList);
-
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
+
+        db = FirebaseFirestore.getInstance();
 
         // Fetch items from Firestore
         fetchItemsFromFirebase();
 
-        // Set up search functionality
-        searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                adapter.filter(query);
-                return false;
-            }
+        // Add Item button click listener
+        addItemButton.setOnClickListener(v -> {
+            startActivity(new Intent(HomeActivity.this, AddItemActivity.class));
+        });
 
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                adapter.filter(newText);
-                return false;
-            }
+        // Logout button click listener
+        logoutButton.setOnClickListener(v -> {
+            FirebaseAuth.getInstance().signOut();
+            startActivity(new Intent(HomeActivity.this, LoginActivity.class));
+            finish();
         });
     }
 
     private void fetchItemsFromFirebase() {
-        Log.d(TAG, "Fetching items from Firestore...");
-        db.collection("items").get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && task.getResult() != null) {
-                        itemList.clear(); // Clear existing items
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            MarketplaceItem item = document.toObject(MarketplaceItem.class);
-                            itemList.add(item); // Add fetched items to the list
-                        }
-
-                        adapter.filter(""); // Ensure the adapter is updated with all items initially
-                        emptyView.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
-                        recyclerView.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
-                    } else {
-                        Log.e(TAG, "Error fetching items from Firestore.", task.getException());
-                        emptyView.setVisibility(View.VISIBLE);
-                        recyclerView.setVisibility(View.GONE);
-                    }
-                });
+        db.collection("items").get().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult() != null) {
+                itemList.clear();
+                for (QueryDocumentSnapshot document : task.getResult()) {
+                    MarketplaceItem item = document.toObject(MarketplaceItem.class);
+                    itemList.add(item);
+                }
+                adapter.filter(""); // Reset filter to show all items
+                emptyView.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
+                recyclerView.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
+            } else {
+                Log.e(TAG, "Error fetching items from Firestore.", task.getException());
+                emptyView.setVisibility(View.VISIBLE);
+                recyclerView.setVisibility(View.GONE);
+            }
+        });
     }
-
 }

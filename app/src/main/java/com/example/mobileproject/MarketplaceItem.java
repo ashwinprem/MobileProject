@@ -1,22 +1,29 @@
 package com.example.mobileproject;
 
 public class MarketplaceItem {
-    private String documentId;
+    private String id;
     private String name;
     private String description;
     private double price;
     private String imageUrl;
 
-    // Default constructor (required by Firestore)
+    // No-argument constructor required for Firestore
     public MarketplaceItem() {}
 
-    // Getters and setters
-    public String getDocumentId() {
-        return documentId;
+    public MarketplaceItem(String id, String name, String description, double price, String imageUrl) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.imageUrl = imageUrl;
     }
 
-    public void setDocumentId(String documentId) {
-        this.documentId = documentId;
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getName() {
