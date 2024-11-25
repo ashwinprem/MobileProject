@@ -2,6 +2,7 @@ package com.example.mobileproject;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,11 +48,14 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
 
         // Add click listener for item
         holder.itemView.setOnClickListener(v -> {
+            Log.d("MarketplaceAdapter", "Passing Item ID: " + item.getId());
+
             Intent intent = new Intent(context, ItemDetailsActivity.class);
-            intent.putExtra("ITEM_ID", item.getId()); // Pass the item's ID
+            intent.putExtra("ITEM_ID", item.getId()); // Ensure this method exists
             context.startActivity(intent);
         });
     }
+
 
     @Override
     public int getItemCount() {

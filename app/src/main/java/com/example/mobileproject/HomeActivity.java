@@ -66,21 +66,24 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void fetchItemsFromFirebase() {
-        db.collection("items").get().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null) {
-                itemList.clear();
-                for (QueryDocumentSnapshot document : task.getResult()) {
-                    MarketplaceItem item = document.toObject(MarketplaceItem.class);
-                    itemList.add(item);
-                }
-                adapter.filter(""); // Reset filter to show all items
-                emptyView.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
-                recyclerView.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
-            } else {
-                Log.e(TAG, "Error fetching items from Firestore.", task.getException());
-                emptyView.setVisibility(View.VISIBLE);
-                recyclerView.setVisibility(View.GONE);
-            }
-        });
+        db.collection("items").get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        itemList.clear();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            MarketplaceItem item = document.toObject(MarketplaceItem.class);
+                            item.setId(document.getId()); // Set Firestore document ID
+                            itemList.add(item);
+                        }
+                        adapter.filter(""); // Ensure the adapter is updated with all items
+                        emptyView.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
+                        recyclerView.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
+                    } else {
+                        Log.e(TAG, "Error fetching items from Firestore", task.getException());
+                        emptyView.setVisibility(View.VISIBLE);
+                        recyclerView.setVisibility(View.GONE);
+                    }
+                });
     }
+
 }
