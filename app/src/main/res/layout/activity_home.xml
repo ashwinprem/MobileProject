@@ -7,14 +7,13 @@
     android:layout_height="match_parent"
     tools:context=".HomeActivity">
 
-    <!-- Empty View -->
-    <TextView
-        android:id="@+id/emptyView"
-        android:layout_width="wrap_content"
+    <!-- Search View -->
+    <SearchView
+        android:id="@+id/searchView"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="No items found"
-        android:visibility="gone"
-        android:layout_gravity="center"
+        android:queryHint="Search items..."
+        android:iconifiedByDefault="false"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -24,8 +23,19 @@
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/searchView"
+        app:layout_constraintBottom_toTopOf="@id/buttonLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Empty View -->
+    <TextView
+        android:id="@+id/emptyView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No items found"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/buttonLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -53,4 +63,6 @@
             android:layout_weight="1"
             android:text="Logout" />
     </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
+
