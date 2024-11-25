@@ -1,19 +1,16 @@
 package com.example.mobileproject;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +21,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private TextView emptyView;
-    private Button logoutButton, addItemButton;
+    private androidx.appcompat.widget.SearchView searchView;
     private MarketplaceAdapter adapter;
     private List<MarketplaceItem> itemList;
     private FirebaseFirestore db;
@@ -37,90 +34,55 @@ public class HomeActivity extends AppCompatActivity {
         // Initialize views
         recyclerView = findViewById(R.id.recyclerView);
         emptyView = findViewById(R.id.emptyView);
-        logoutButton = findViewById(R.id.logoutButton);
-        addItemButton = findViewById(R.id.addItemButton);
+        searchView = findViewById(R.id.searchView);
 
-        // Initialize Firebase and data structures
+        // Initialize Firestore and item list
         db = FirebaseFirestore.getInstance();
         itemList = new ArrayList<>();
         adapter = new MarketplaceAdapter(this, itemList);
 
-        // Set up RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
-        // Fetch items from Firestore with real-time updates
-        listenForFirestoreUpdates();
+        // Fetch items from Firestore
+        fetchItemsFromFirebase();
 
-        // Set up Logout button
-        logoutButton.setOnClickListener(v -> {
-            FirebaseAuth.getInstance().signOut();
-            startActivity(new Intent(HomeActivity.this, LoginActivity.class));
-            finish();
-        });
+        // Set up search functionality
+        searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                adapter.filter(query);
+                return false;
+            }
 
-        // Set up Add Item button
-        addItemButton.setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, AddItemActivity.class);
-            startActivity(intent);
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                adapter.filter(newText);
+                return false;
+            }
         });
     }
 
-    private void listenForFirestoreUpdates() {
-        db.collection("items").addSnapshotListener((snapshots, e) -> {
-            if (e != null) {
-                Log.e(TAG, "Error listening for Firestore updates", e);
-                return;
-            }
+    private void fetchItemsFromFirebase() {
+        Log.d(TAG, "Fetching items from Firestore...");
+        db.collection("items").get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        itemList.clear(); // Clear existing items
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            MarketplaceItem item = document.toObject(MarketplaceItem.class);
+                            itemList.add(item); // Add fetched items to the list
+                        }
 
-            if (snapshots != null) {
-                for (DocumentChange change : snapshots.getDocumentChanges()) {
-                    switch (change.getType()) {
-                        case ADDED:
-                            MarketplaceItem newItem = change.getDocument().toObject(MarketplaceItem.class);
-                            newItem.setDocumentId(change.getDocument().getId());
-                            itemList.add(newItem);
-                            adapter.notifyItemInserted(itemList.size() - 1);
-                            break;
-                        case MODIFIED:
-                            MarketplaceItem updatedItem = change.getDocument().toObject(MarketplaceItem.class);
-                            updatedItem.setDocumentId(change.getDocument().getId());
-                            int indexToUpdate = findItemIndex(change.getDocument().getId());
-                            if (indexToUpdate != -1) {
-                                itemList.set(indexToUpdate, updatedItem);
-                                adapter.notifyItemChanged(indexToUpdate);
-                            }
-                            break;
-                        case REMOVED:
-                            int indexToRemove = findItemIndex(change.getDocument().getId());
-                            if (indexToRemove != -1) {
-                                itemList.remove(indexToRemove);
-                                adapter.notifyItemRemoved(indexToRemove);
-                            }
-                            break;
+                        adapter.filter(""); // Ensure the adapter is updated with all items initially
+                        emptyView.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
+                        recyclerView.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
+                    } else {
+                        Log.e(TAG, "Error fetching items from Firestore.", task.getException());
+                        emptyView.setVisibility(View.VISIBLE);
+                        recyclerView.setVisibility(View.GONE);
                     }
-                }
-                toggleEmptyView();
-            }
-        });
+                });
     }
 
-    private void toggleEmptyView() {
-        if (itemList.isEmpty()) {
-            emptyView.setVisibility(View.VISIBLE);
-            recyclerView.setVisibility(View.GONE);
-        } else {
-            emptyView.setVisibility(View.GONE);
-            recyclerView.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private int findItemIndex(String documentId) {
-        for (int i = 0; i < itemList.size(); i++) {
-            if (itemList.get(i).getDocumentId().equals(documentId)) {
-                return i;
-            }
-        }
-        return -1;
-    }
 }
