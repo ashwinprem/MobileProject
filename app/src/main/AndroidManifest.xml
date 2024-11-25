@@ -23,6 +23,7 @@
             android:exported="false" />
         <activity android:name=".AddItemActivity" />
         <activity android:name=".ItemDetailsActivity" />
+        <activity android:name=".ProfileActivity" />
 
         <activity
             android:name=".LoginActivity"
