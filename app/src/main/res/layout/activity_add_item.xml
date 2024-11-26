@@ -33,10 +33,22 @@
         android:hint="Image URL"
         android:inputType="textUri" />
 
+    <EditText
+        android:hint="Postal Code (e.g., L3F 2J4)"
+        android:id="@+id/postalCodeInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text" />
     <Button
         android:id="@+id/submitButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Submit Item"
+        android:layout_marginTop="16dp" />
+    <fragment
+        android:id="@+id/mapFragment"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
         android:layout_marginTop="16dp" />
 </LinearLayout>
