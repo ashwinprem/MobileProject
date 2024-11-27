@@ -1,5 +1,6 @@
 package com.example.mobileproject;
 
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -38,12 +39,13 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationResult;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import android.os.StrictMode;
 
 public class AddItemActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-    private EditText itemName, itemDescription, itemPrice, imageUrlInput;
+    private EditText itemName, itemDescription, itemPrice, imageUrlInput, postalCodeInput;
     private Button submitButton;
 
     private FirebaseFirestore db;
@@ -69,6 +71,7 @@ public class AddItemActivity extends AppCompatActivity implements OnMapReadyCall
         itemPrice = findViewById(R.id.itemPrice);
         imageUrlInput = findViewById(R.id.imageUrlInput);
         submitButton = findViewById(R.id.submitButton);
+            postalCodeInput = findViewById(R.id.postalCodeInput);
 
         // Initialize Firestore
         db = FirebaseFirestore.getInstance();
@@ -92,6 +95,8 @@ public class AddItemActivity extends AppCompatActivity implements OnMapReadyCall
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             getUserLocation();
+
+
         } else {
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
@@ -136,6 +141,7 @@ public class AddItemActivity extends AppCompatActivity implements OnMapReadyCall
                                 .title("Current Location"));
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
                     }
+                    fetchAndSetPostalCode(latitude,longitude);
                 }
             }
         };
@@ -184,11 +190,12 @@ public class AddItemActivity extends AppCompatActivity implements OnMapReadyCall
         return super.onOptionsItemSelected(item);
     }
 
-    private String getAddressFromLatLong(double latitude, double longitude) {
+    /* private String getAddressFromLatLong(double latitude, double longitude) {
         String address = null;
 
         try {
             // Build the URL for the geocoding request
+            @SuppressLint("DefaultLocale")
             String urlString = String.format(
                     "https://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&key=%s",
                     latitude, longitude, apiKey
@@ -232,7 +239,7 @@ public class AddItemActivity extends AppCompatActivity implements OnMapReadyCall
 
         return address;
     }
-
+    */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -243,7 +250,70 @@ public class AddItemActivity extends AppCompatActivity implements OnMapReadyCall
             mMap.setMyLocationEnabled(true);
         }
 
-        // Modify your existing getUserLocation() to update the map
         getUserLocation();
     }
+
+    private void getPostalCodeFromLatLong(double latitude,
+                                          double longitude,
+                                          PostalCodeCallback callback) {
+        new Thread(() -> {
+            String postalCode = null;
+            try {
+                String urlString = String.format(
+                        "https://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&key=%s",
+                        latitude, longitude, apiKey
+                );
+                URL url = new URL(urlString);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+
+                JSONObject jsonResponse = new JSONObject(response.toString());
+                if (jsonResponse.getString("status").equals("OK")) {
+                    JSONArray results = jsonResponse.getJSONArray("results");
+                    for (int i = 0; i < results.length(); i++) {
+                        JSONObject result = results.getJSONObject(i);
+                        JSONArray addressComponents = result.getJSONArray("address_components");
+                        for (int j = 0; j < addressComponents.length(); j++) {
+                            JSONObject component = addressComponents.getJSONObject(j);
+                            JSONArray types = component.getJSONArray("types");
+                            if (types.toString().contains("postal_code")) {
+                                postalCode = component.getString("long_name");
+                                break;
+                            }
+                        }
+                        if (postalCode != null) break;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            String finalPostalCode = postalCode;
+            runOnUiThread(() ->
+                    callback.onPostalCodeFetched(finalPostalCode));
+        }).start();
+    }
+
+    private void fetchAndSetPostalCode(double latitude, double longitude) {
+        EditText postalCodeInput = findViewById(R.id.postalCodeInput);
+        getPostalCodeFromLatLong(latitude, longitude, postalCode -> {
+            if (postalCode != null) {
+                postalCodeInput.setText(postalCode);
+                //Toast.makeText(this, "Postal Code Auto Populated", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Failed to fetch postal code", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
+
 }
