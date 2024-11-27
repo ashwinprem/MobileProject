@@ -6,16 +6,25 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.GeoPoint;
 
-public class ItemDetailsActivity extends AppCompatActivity {
+public class ItemDetailsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private TextView itemName, itemDescription, itemPrice;
     private ImageView itemImage;
+    private GoogleMap mMap;
 
     private FirebaseFirestore db;
 
@@ -36,12 +45,17 @@ public class ItemDetailsActivity extends AppCompatActivity {
         // Get the Item ID passed from MarketplaceAdapter
         String itemId = getIntent().getStringExtra("ITEM_ID");
 
+
         if (itemId != null) {
             fetchItemDetails(itemId);
         } else {
             Toast.makeText(this, "Error: Item ID is missing", Toast.LENGTH_SHORT).show();
             finish();
         }
+
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
     }
 
     private void fetchItemDetails(String itemId) {
@@ -56,6 +70,15 @@ public class ItemDetailsActivity extends AppCompatActivity {
                             itemDescription.setText(item.getDescription());
                             itemPrice.setText("$" + item.getPrice());
                             Glide.with(this).load(item.getImageUrl()).into(itemImage);
+
+                            GeoPoint location = documentSnapshot.getGeoPoint("location");
+                            if (location != null && mMap != null) {
+                                LatLng itemLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                                mMap.addMarker(new MarkerOptions().position(itemLocation));
+                                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(itemLocation, 15f));
+                            } else {
+                                Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show();
+                            }
                         }
                     } else {
                         Toast.makeText(this, "Error: Item not found", Toast.LENGTH_SHORT).show();
@@ -64,5 +87,10 @@ public class ItemDetailsActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Error fetching item details", Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        mMap = googleMap;
     }
 }

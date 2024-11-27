@@ -14,7 +14,14 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.GeoPoint;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -34,7 +41,7 @@ import com.google.android.gms.location.LocationResult;
 import org.json.JSONObject;
 import android.os.StrictMode;
 
-public class AddItemActivity extends AppCompatActivity {
+public class AddItemActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private EditText itemName, itemDescription, itemPrice, imageUrlInput;
     private Button submitButton;
@@ -48,6 +55,8 @@ public class AddItemActivity extends AppCompatActivity {
     private FusedLocationProviderClient fusedLocationClient;
 
     String apiKey = "";
+
+    private GoogleMap mMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +79,10 @@ public class AddItemActivity extends AppCompatActivity {
         // Set up submit button click listener
         submitButton.setOnClickListener(v -> addItemToFirestore());
 
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.mapFragment);
+        mapFragment.getMapAsync(this);
+
         // Enable back button in Action Bar
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -88,53 +101,45 @@ public class AddItemActivity extends AppCompatActivity {
 
     // This function gets the user's location and stores it in class-level variables
     private void getUserLocation() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // Request permission if not granted
-            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             return;
         }
 
-        // Create a location request
         LocationRequest locationRequest = LocationRequest.create()
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY) // Use high accuracy
-                .setInterval(10000) // Interval in milliseconds for active location updates (not used here)
-                .setFastestInterval(5000) // Fastest interval in milliseconds (not used here)
-                .setNumUpdates(1); // Get only one update
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(10000)
+                .setFastestInterval(5000)
+                .setNumUpdates(1);
 
-        // Define a LocationCallback
         LocationCallback locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 if (locationResult == null) {
-                    Toast.makeText(AddItemActivity.this, "Failed to get current location", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AddItemActivity.this,
+                            "Failed to get current location", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                // Get the most recent location
                 Location location = locationResult.getLastLocation();
                 if (location != null) {
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
-                    Toast.makeText(AddItemActivity.this,
-                            "Location: Lat: " + latitude + ", Long: " + longitude,
-                            Toast.LENGTH_SHORT).show();
 
-                    // Optionally fetch the address
-                    new Thread(() -> {
-                        String result = getAddressFromLatLong(latitude, longitude);
-                        runOnUiThread(() -> {
-                            if (result != null) {
-                                Log.d("addressGenerated", result);
-                            } else {
-                                Toast.makeText(AddItemActivity.this, "Failed to get address", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }).start();
+                    // Update map with current location
+                    if (mMap != null) {
+                        LatLng currentLocation = new LatLng(latitude, longitude);
+                        mMap.addMarker(new MarkerOptions()
+                                .position(currentLocation)
+                                .title("Current Location"));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
+                    }
                 }
             }
         };
 
-        // Request location updates
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
     }
 
@@ -155,11 +160,9 @@ public class AddItemActivity extends AppCompatActivity {
         item.put("price", Double.parseDouble(price));
         item.put("imageUrl", imageUrl);
 
-        // Store latitude and longitude in Firestore (if available)
-        if (latitude != 0 && longitude != 0) {
-            item.put("latitude", latitude);
-            item.put("longitude", longitude);
-        }
+
+        GeoPoint geoPoint = new GeoPoint(latitude, longitude);
+        item.put("location", geoPoint);
 
         db.collection("items").add(item)
                 .addOnSuccessListener(documentReference -> {
@@ -228,5 +231,19 @@ public class AddItemActivity extends AppCompatActivity {
         }
 
         return address;
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+
+        // Enable the my-location layer if permission is granted
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mMap.setMyLocationEnabled(true);
+        }
+
+        // Modify your existing getUserLocation() to update the map
+        getUserLocation();
     }
 }
