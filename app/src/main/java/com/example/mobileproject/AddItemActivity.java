@@ -56,7 +56,7 @@ public class AddItemActivity extends AppCompatActivity implements OnMapReadyCall
 
     private FusedLocationProviderClient fusedLocationClient;
 
-    String apiKey = "";
+    String apiKey = "REPLACE_WITH_KEY";
 
     private GoogleMap mMap;
 
@@ -104,10 +104,12 @@ public class AddItemActivity extends AppCompatActivity implements OnMapReadyCall
         }
     }
 
-    // This function gets the user's location and stores it in class-level variables
+    // This function gets the user's lat and long
     private void getUserLocation() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+        if (ActivityCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
+
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             return;
@@ -190,56 +192,6 @@ public class AddItemActivity extends AppCompatActivity implements OnMapReadyCall
         return super.onOptionsItemSelected(item);
     }
 
-    /* private String getAddressFromLatLong(double latitude, double longitude) {
-        String address = null;
-
-        try {
-            // Build the URL for the geocoding request
-            @SuppressLint("DefaultLocale")
-            String urlString = String.format(
-                    "https://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&key=%s",
-                    latitude, longitude, apiKey
-            );
-
-            // Create a URL object and open a connection
-            URL url = new URL(urlString);
-            Log.d("URLCrafted", urlString);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-
-            // Read the response
-            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
-            }
-            reader.close();
-
-            // Log the raw response to help debug
-            Log.d("GeocodingResponse", response.toString());
-
-            // Parse the JSON response
-            JSONObject jsonResponse = new JSONObject(response.toString());
-
-            // Check if the status is OK
-            if (jsonResponse.getString("status").equals("OK")) {
-                // Get the formatted address from the response
-                address = jsonResponse.getJSONArray("results")
-                        .getJSONObject(0)
-                        .getString("formatted_address");
-            } else {
-                // Handle any status other than OK
-                address = "Address not found (status: " + jsonResponse.getString("status") + ")";
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            address = "Error: " + e.getMessage();
-        }
-
-        return address;
-    }
-    */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -259,7 +211,7 @@ public class AddItemActivity extends AppCompatActivity implements OnMapReadyCall
         new Thread(() -> {
             String postalCode = null;
             try {
-                String urlString = String.format(
+                @SuppressLint("DefaultLocale") String urlString = String.format(
                         "https://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&key=%s",
                         latitude, longitude, apiKey
                 );
